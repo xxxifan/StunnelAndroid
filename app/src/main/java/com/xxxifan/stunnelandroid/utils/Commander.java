@@ -164,8 +164,6 @@ public class Commander {
             log.mkdirs();
         }
 
-//
-//
 //        Context context = App.get();
 //        File busyBoxBin = new File("/system/xbin/busybox");
 //        File applet = new File("/system/xbin/find");

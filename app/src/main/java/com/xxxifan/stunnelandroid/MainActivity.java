@@ -1,20 +1,25 @@
 package com.xxxifan.stunnelandroid;
 
+import android.content.Intent;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.xxxifan.devbox.library.helpers.ActivityConfig;
+import com.xxxifan.devbox.library.tools.FileUtils;
 import com.xxxifan.devbox.library.tools.ViewUtils;
 import com.xxxifan.devbox.library.ui.BaseActivity;
 import com.xxxifan.stunnelandroid.utils.Commander;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import butterknife.Bind;
@@ -37,6 +42,8 @@ public class MainActivity extends BaseActivity {
     EditText mServerText;
     @Bind(R.id.local_port_text)
     EditText mLocalPortText;
+    @Bind(R.id.cert_file_name)
+    TextView mCertPathText;
     @Bind(R.id.service_progress)
     ProgressBar mProgressBar;
 
@@ -66,6 +73,31 @@ public class MainActivity extends BaseActivity {
         if (savedFragments != null) {
             setContainerFragment(new ShowLogFragment());
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1 && resultCode == -1) {
+            try {
+                mCertPath = FileUtils.getPath(getContext(), data.getData());
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            }
+            if (TextUtils.isEmpty(mCertPath)) {
+                Toast.makeText(getContext(), "Invalid cert file", Toast.LENGTH_LONG).show();
+            } else {
+                mCertPathText.setText(mCertPath);
+            }
+        }
+    }
+
+    @OnClick(R.id.cert_btn)
+    public void onChooseCert(View view) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("text/pem");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(intent, 1);
     }
 
     @OnClick(R.id.save_btn)

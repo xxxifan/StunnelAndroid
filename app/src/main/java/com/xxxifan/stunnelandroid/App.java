@@ -2,6 +2,8 @@ package com.xxxifan.stunnelandroid;
 
 import android.app.Application;
 
+import com.xxxifan.devbox.library.Devbox;
+
 /**
  * Created by xifan on 16-1-8.
  */
@@ -16,5 +18,6 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         sApp = this;
+        Devbox.install(this, true);
     }
 }
