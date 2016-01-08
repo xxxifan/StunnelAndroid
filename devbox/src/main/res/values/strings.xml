@@ -1,0 +1,11 @@
+<resources>
+    <string name="title_update_available">Available update found</string>
+
+    <string name="msg_loading">Loading</string>
+    <string name="msg_download_update">Start Download update&#8230;</string>
+    <string name="msg_download_description">Downloading update</string>
+    <string name="msg_cannot_download_update">Cannot download update</string>
+
+    <string name="btn_download">Download</string>
+    <string name="btn_ignore">Ignore</string>
+</resources>

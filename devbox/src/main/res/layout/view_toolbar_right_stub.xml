@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toolbar_right_stub_view"
+    android:layout_width="56dp"
+    android:layout_height="match_parent"
+    android:background="?selectableItemBackgroundBorderless"
+    android:padding="12dp" />

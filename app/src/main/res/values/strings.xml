@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">StunnelAndroid</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_server_address">Server address</string>
+    <string name="title_server_port">Server port</string>
+    <string name="title_choose_cert">Choose cert file</string>
+    <string name="title_service_status">Service status:</string>
+    <string name="title_log">Log</string>
+</resources>

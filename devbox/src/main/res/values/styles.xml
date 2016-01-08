@@ -1,0 +1,16 @@
+<resources>
+
+    <style name="Devbox.AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="PagerIndicatorStyle">
+        <item name="android:background">?colorPrimary</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="pstsShouldExpand">true</item>
+        <item name="pstsTabTextStyle">normal</item>
+        <item name="pstsTabTextFontFamily">sans-serif</item>
+    </style>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="title_update_available">有可用的更新</string>
+
+    <string name="msg_loading">请稍候</string>
+    <string name="msg_download_update">开始下载更新&#8230;</string>
+    <string name="msg_download_description">正在下载更新</string>
+    <string name="msg_cannot_download_update">无法下载更新</string>
+
+    <string name="btn_download">立即下载</string>
+    <string name="btn_ignore">忽略</string>
+</resources>
