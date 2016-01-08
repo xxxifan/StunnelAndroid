@@ -13,11 +13,14 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.xxxifan.devbox.library.helpers.ActivityConfig;
+import com.xxxifan.devbox.library.helpers.FieldChecker;
 import com.xxxifan.devbox.library.tools.FileUtils;
 import com.xxxifan.devbox.library.tools.ViewUtils;
 import com.xxxifan.devbox.library.ui.BaseActivity;
+import com.xxxifan.stunnelandroid.model.ServerInfo;
 import com.xxxifan.stunnelandroid.utils.Commander;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -48,6 +51,7 @@ public class MainActivity extends BaseActivity {
     ProgressBar mProgressBar;
 
     private Commander mCommander;
+    private ServerInfo mServerInfo;
     private String mCertPath;
 
     private MaterialDialog mLoadingDialog;
@@ -65,7 +69,12 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView(View rootView) {
-        rootView.post(this::checkEnvironment);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkEnvironment();
     }
 
     @Override
@@ -87,7 +96,7 @@ public class MainActivity extends BaseActivity {
             if (TextUtils.isEmpty(mCertPath)) {
                 Toast.makeText(getContext(), "Invalid cert file", Toast.LENGTH_LONG).show();
             } else {
-                mCertPathText.setText(mCertPath);
+                mCertPathText.setText(new File(mCertPath).getName());
             }
         }
     }
@@ -102,23 +111,35 @@ public class MainActivity extends BaseActivity {
 
     @OnClick(R.id.save_btn)
     public void onSaveClick(View view) {
-        mLoadingDialog = ViewUtils.getLoadingDialog(getContext());
-        mLoadingDialog.show();
+        EditText[] fields = {
+                mServerText,
+                mPortText,
+                mLocalPortText
+        };
+        int empty = FieldChecker.checkEmptyField(fields);
+        if (empty < 0) {
+            mLoadingDialog = ViewUtils.getLoadingDialog(getContext());
+            mLoadingDialog.show();
 
-        mProgressBar.setVisibility(View.VISIBLE);
-        String server = mServerText.getText().toString();
-        String serverPort = mPortText.getText().toString();
-        String localPort = mLocalPortText.getText().toString();
+            mProgressBar.setVisibility(View.VISIBLE);
+            mServerInfo.server = mServerText.getText().toString();
+            mServerInfo.serverPort = mPortText.getText().toString();
+            mServerInfo.localPort = mLocalPortText.getText().toString();
 
-        if (mCommander == null) {
-            mCommander = new Commander();
+            if (mCommander == null) {
+                mCommander = new Commander();
+            }
+            try {
+                mCommander.saveConfig(mServerInfo, mCertPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            ViewUtils.dismissDialog(mLoadingDialog);
+        } else {
+            fields[empty].requestFocus();
+            Toast.makeText(getContext(), "Please input server info", Toast.LENGTH_LONG).show();
         }
-        try {
-            mCommander.saveConfig(server, serverPort, localPort, mCertPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        ViewUtils.dismissDialog(mLoadingDialog);
+
     }
 
     private void checkEnvironment() {
@@ -139,9 +160,9 @@ public class MainActivity extends BaseActivity {
                         if (mCommander == null) {
                             mCommander = new Commander();
                         }
-                        mCommander.initEnvironment();
 
-                        // TODO: 16-1-8 load config
+                        mCommander.initEnvironment();
+                        initServerInfo();
 
                         if (!subscriber.isUnsubscribed()) {
                             subscriber.onNext(null);
@@ -163,6 +184,17 @@ public class MainActivity extends BaseActivity {
                             ViewUtils.getAlertDialog(getContext(), throwable.getMessage());
                         }
                 );
+    }
+
+    private void initServerInfo() {
+        mServerInfo = new ServerInfo();
+        mServerInfo.loadInfo();
+        if (TextUtils.isEmpty(mServerText.getText()) && TextUtils.isEmpty(mPortText.getText()) &&
+                TextUtils.isEmpty(mLocalPortText.getText())) {
+            mServerText.setText(mServerInfo.server);
+            mPortText.setText(mServerInfo.serverPort);
+            mLocalPortText.setText(mServerInfo.localPort);
+        }
     }
 
     @Override

@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.xxxifan.devbox.library.tools.IOUtils;
 import com.xxxifan.devbox.library.tools.Log;
 import com.xxxifan.stunnelandroid.App;
+import com.xxxifan.stunnelandroid.model.ServerInfo;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -30,6 +31,8 @@ public class Commander {
     private static final String ASSET_STUNNEL = "stunnel";
     private static final String ASSET_CONFIG = "stunnel.conf";
 
+    private static final String TEMP_EXTRACT_PATH = "/data/local/tmp/";
+
     private static final String CONF_TARGET_PATH = "/data/local/etc/stunnel/stunnel.conf";
     private static final String CERT_TARGET_PATH = "/data/local/etc/stunnel/stunnel.pem";
     private static final String BINARY_TARGET_PATH = "/system/bin/stunnel";
@@ -45,7 +48,7 @@ public class Commander {
     }
 
     public static CommandResult execCommand(String command, boolean isRoot, boolean isNeedResultMsg) {
-        return execCommand(new String[]{
+        return execCommand(new String[] {
                 command
         }, isRoot, isNeedResultMsg);
     }
@@ -130,39 +133,53 @@ public class Commander {
 
     public static void extractAssetTo(InputStream inputStream, File target) throws
             IOException {
-        IOUtils.saveToDisk(inputStream, target);
+        extractAssetTo(inputStream, target, false);
     }
 
     /**
      * extract file to a temp dir that have write permission, and then move to target with root.
      */
-    public static void extractAssetTo(InputStream inputStream, File tmpFile, File target) throws
+    public static void extractAssetTo(InputStream inputStream, File target, boolean writeSystem) throws
             IOException {
-        IOUtils.saveToDisk(inputStream, tmpFile);
+        if (writeSystem) {
+            File tmpFile = new File(App.get().getFilesDir(), "extract");
 
-        execCommand(new String[]{
-                CMD_RW_SYSTEM,
-                "cat " + tmpFile.getPath() + " > " + target.getPath(),
-                "chmod 0755 " + target.getPath(),
-                CMD_RO_SYSTEM
-        }, true, true);
+            IOUtils.saveToDisk(inputStream, tmpFile);
+
+            execCommand(new String[] {
+                    CMD_RW_SYSTEM,
+                    "cat " + tmpFile.getPath() + " > " + target.getPath(),
+                    "chmod 0755 " + target.getPath(),
+                    CMD_RO_SYSTEM
+            }, true, true);
+        } else {
+            IOUtils.saveToDisk(inputStream, target);
+        }
+    }
+
+    public static void startStunnel() {
+        ServerInfo serverInfo = new ServerInfo();
+        serverInfo.loadInfo();
+        if (serverInfo.hasConfig()) {
+            execCommand("stunnel", true, true);
+        }
     }
 
     public void initEnvironment() throws IOException {
         File binaryFile = new File(BINARY_TARGET_PATH);
-        File root = new File(ROOT_PATH);
-        File log = new File(LOG_PATH);
         if (!binaryFile.exists() || binaryFile.isDirectory()) {
             InputStream stream = App.get().getAssets().open(ASSET_STUNNEL);
-            Commander.extractAssetTo(stream, binaryFile);
+            extractAssetTo(stream, binaryFile, true);
             chmod(4755, binaryFile.getPath());
         }
-        if (!root.exists() || !root.isDirectory()) {
-            root.mkdirs();
-        }
-        if (!log.exists() || !log.isDirectory()) {
-            log.mkdirs();
-        }
+        execCommand(new String[] {
+                "mkdir -p " + ROOT_PATH,
+                "chmod -R 0644 " + ROOT_PATH
+        }, true, true);
+        execCommand(new String[] {
+                "mkdir -p " + LOG_PATH,
+                "chmod -R 0644 " + LOG_PATH
+        }, true, true);
 
 //        Context context = App.get();
 //        File busyBoxBin = new File("/system/xbin/busybox");
@@ -203,7 +220,7 @@ public class Commander {
 //        }
     }
 
-    public void saveConfig(String server, String serverPort, String localPort, String mCertPath) throws IOException {
+    public void saveConfig(ServerInfo info, String mCertPath) throws IOException {
         File certFile = new File(mCertPath);
         File certTargetFile = new File(CERT_TARGET_PATH);
         File confTargetFile = new File(CONF_TARGET_PATH);
@@ -217,9 +234,9 @@ public class Commander {
             execCommand(
                     String.format(
                             "echo \"accept = 127.0.0.1:%s\\nconnect = %s:%s\\n\" > %s",
-                            localPort,
-                            server,
-                            serverPort,
+                            info.localPort,
+                            info.server,
+                            info.serverPort,
                             confTargetFile.getPath()
                     ),
                     true,

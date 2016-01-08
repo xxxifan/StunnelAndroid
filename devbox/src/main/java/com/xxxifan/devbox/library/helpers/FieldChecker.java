@@ -8,6 +8,10 @@ import android.widget.EditText;
  */
 public class FieldChecker {
 
+    private FieldChecker() {
+
+    }
+
     public static boolean isEmptyField(EditText item) {
         return checkEmptyField(item) > -1;
     }
@@ -34,8 +38,8 @@ public class FieldChecker {
         }
 
         for (int i = 0, s = items.length; i < s; i++) {
-            boolean isFilter = filter.onFilter(items[i].getText());
-            if (!isFilter) {
+            boolean success = filter.onCheck(items[i].getText());
+            if (!success) {
                 return i;
             }
         }
@@ -61,8 +65,11 @@ public class FieldChecker {
         return result;
     }
 
-    public abstract class CheckFilter{
-        public abstract boolean onFilter(CharSequence str);
+    public abstract class CheckFilter {
+        /**
+         * @return true if success
+         */
+        public abstract boolean onCheck(CharSequence str);
     }
 
 }
