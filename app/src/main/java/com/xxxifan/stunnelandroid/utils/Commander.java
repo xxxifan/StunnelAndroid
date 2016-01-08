@@ -32,6 +32,9 @@ public class Commander {
 
     private static final String CONF_TARGET_PATH = "/data/local/etc/stunnel/stunnel.conf";
     private static final String CERT_TARGET_PATH = "/data/local/etc/stunnel/stunnel.pem";
+    private static final String BINARY_TARGET_PATH = "/system/bin/stunnel";
+    private static final String ROOT_PATH = "/data/local/etc/stunnel/";
+    private static final String LOG_PATH = "/data/local/var/log/";
 
     public static boolean checkRootPermission() {
         return execCommand("echo root", true, true).result == 0;
@@ -146,12 +149,21 @@ public class Commander {
     }
 
     public void initEnvironment() throws IOException {
-        File target = new File("/system/bin/stunnel");
-        if (!target.exists() || target.isDirectory()) {
+        File binaryFile = new File(BINARY_TARGET_PATH);
+        File root = new File(ROOT_PATH);
+        File log = new File(LOG_PATH);
+        if (!binaryFile.exists() || binaryFile.isDirectory()) {
             InputStream stream = App.get().getAssets().open(ASSET_STUNNEL);
-            Commander.extractAssetTo(stream, target);
-            chmod(4755, target.getPath());
+            Commander.extractAssetTo(stream, binaryFile);
+            chmod(4755, binaryFile.getPath());
         }
+        if (!root.exists() || !root.isDirectory()) {
+            root.mkdirs();
+        }
+        if (!log.exists() || !log.isDirectory()) {
+            log.mkdirs();
+        }
+
 //
 //
 //        Context context = App.get();
