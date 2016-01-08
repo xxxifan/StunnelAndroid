@@ -122,9 +122,9 @@ public class Commander {
         }
 
         if (successMsg != null) {
-            Log.e(Commander.class, successMsg.toString());
+            Log.e(Commander.class, "successMsg : " + successMsg.toString());
         } else if (errorMsg != null) {
-            Log.e(Commander.class, errorMsg.toString());
+            Log.e(Commander.class, "errorMsg : " + errorMsg.toString());
         }
 
         return new CommandResult(result, successMsg == null ? null : successMsg.toString(),
@@ -157,12 +157,31 @@ public class Commander {
         }
     }
 
-    public static void startStunnel() {
+    public static boolean isStunnelStarted() {
+        CommandResult result = execCommand("ps stunnel", true, true);
+        if (!TextUtils.isEmpty(result.successMsg)) {
+            String[] strs = result.successMsg.split(" ");
+            for (String str : strs) {
+                if (str.trim().equals("stunnel")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean startStunnelService() {
         ServerInfo serverInfo = new ServerInfo();
         serverInfo.loadInfo();
-        if (serverInfo.hasConfig()) {
-            execCommand("stunnel", true, true);
+        if (serverInfo.hasConfig() && serverInfo.start) {
+            CommandResult result = execCommand("stunnel", true, true);
+            return TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
         }
+        return false;
+    }
+
+    public static void killStunnelService() {
+        execCommand("pkill stunnel", true, true);
     }
 
     public void initEnvironment() throws IOException {
@@ -221,6 +240,7 @@ public class Commander {
     }
 
     public void saveConfig(ServerInfo info, String mCertPath) throws IOException {
+        info.save();
         File certFile = new File(mCertPath);
         File certTargetFile = new File(CERT_TARGET_PATH);
         File confTargetFile = new File(CONF_TARGET_PATH);
@@ -228,25 +248,22 @@ public class Commander {
             confTargetFile.delete();
         }
 
-        boolean confResult = IOUtils.saveToDisk(App.get().getAssets().open(ASSET_CONFIG), confTargetFile);
-        if (confResult) {
-            chmod(4755, confTargetFile.getPath());
-            execCommand(
-                    String.format(
-                            "echo \"accept = 127.0.0.1:%s\\nconnect = %s:%s\\n\" > %s",
-                            info.localPort,
-                            info.server,
-                            info.serverPort,
-                            confTargetFile.getPath()
-                    ),
-                    true,
-                    true
-            );
-        }
-        boolean certResult = IOUtils.saveToDisk(Okio.buffer(Okio.source(certFile)), certTargetFile);
-        if (certResult) {
-            chmod(4755, certTargetFile.getPath());
-        }
+        // extract config
+        extractAssetTo(App.get().getAssets().open(ASSET_CONFIG), confTargetFile, true);
+        // write config
+        execCommand(
+                String.format(
+                        "echo \"accept = 127.0.0.1:%s\\nconnect = %s:%s\\n\" >> %s",
+                        info.localPort,
+                        info.server,
+                        info.serverPort,
+                        confTargetFile.getPath()
+                ),
+                true,
+                true
+        );
+        // extra cert
+        extractAssetTo(Okio.buffer(Okio.source(certFile)).inputStream(), certTargetFile, true);
     }
 
     /**

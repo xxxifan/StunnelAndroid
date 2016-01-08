@@ -9,9 +9,9 @@ import com.xxxifan.stunnelandroid.utils.Commander;
 /**
  * Created by xifan on 16-1-8.
  */
-public class BootReceiver extends BroadcastReceiver {
+public class StunnelReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Commander.startStunnel();
+        Commander.startStunnelService();
     }
 }

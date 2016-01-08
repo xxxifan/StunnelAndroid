@@ -6,7 +6,6 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -39,8 +38,6 @@ public class MainActivity extends BaseActivity {
     Button mChooseCertBtn;
     @Bind(R.id.service_status)
     TextView mServiceStatusText;
-    @Bind(R.id.service_start_btn)
-    ImageView mStartBtn;
     @Bind(R.id.server_text)
     EditText mServerText;
     @Bind(R.id.local_port_text)
@@ -53,6 +50,7 @@ public class MainActivity extends BaseActivity {
     private Commander mCommander;
     private ServerInfo mServerInfo;
     private String mCertPath;
+    private boolean mIsStarted;
 
     private MaterialDialog mLoadingDialog;
 
@@ -75,6 +73,12 @@ public class MainActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         checkEnvironment();
+        initServerInfo();
+        checkServer();
+    }
+
+    private void checkServer() {
+        mIsStarted = Commander.isStunnelStarted();
     }
 
     @Override
@@ -118,28 +122,71 @@ public class MainActivity extends BaseActivity {
         };
         int empty = FieldChecker.checkEmptyField(fields);
         if (empty < 0) {
+            if (TextUtils.isEmpty(mCertPath)) {
+                Toast.makeText(getContext(), "Please select your cert file!", Toast.LENGTH_LONG).show();
+                return;
+            }
+
             mLoadingDialog = ViewUtils.getLoadingDialog(getContext());
             mLoadingDialog.show();
 
-            mProgressBar.setVisibility(View.VISIBLE);
             mServerInfo.server = mServerText.getText().toString();
             mServerInfo.serverPort = mPortText.getText().toString();
             mServerInfo.localPort = mLocalPortText.getText().toString();
 
-            if (mCommander == null) {
-                mCommander = new Commander();
-            }
-            try {
-                mCommander.saveConfig(mServerInfo, mCertPath);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            ViewUtils.dismissDialog(mLoadingDialog);
+            Observable.just(true)
+                    .map(whatever -> {
+                        if (mCommander == null) {
+                            mCommander = new Commander();
+                        }
+                        try {
+                            mCommander.saveConfig(mServerInfo, mCertPath);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                            return false;
+                        }
+                        return true;
+                    })
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            success -> ViewUtils.dismissDialog(mLoadingDialog),
+                            error -> ViewUtils.getAlertDialog(getContext(), error.getMessage())
+                    );
         } else {
             fields[empty].requestFocus();
             Toast.makeText(getContext(), "Please input server info", Toast.LENGTH_LONG).show();
         }
+    }
 
+    @OnClick(R.id.service_start_btn)
+    public void onStartClick(View view) {
+        mProgressBar.setVisibility(View.VISIBLE);
+        checkServer();
+        if (!mIsStarted) {
+            startStunnel();
+        } else {
+            Toast.makeText(getContext(), "Service " + "stopped", Toast.LENGTH_SHORT).show();
+            Commander.killStunnelService();
+            mProgressBar.setVisibility(View.GONE);
+        }
+    }
+
+    private void startStunnel() {
+        mServerInfo.setServiceState(true);
+        Observable.just(true)
+                .map(whatever -> Commander.startStunnelService())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnTerminate(() -> mProgressBar.setVisibility(View.GONE))
+                .subscribe(
+                        success -> {
+                            mIsStarted = success;
+                            mServerInfo.setServiceState(success);
+                            Toast.makeText(getContext(), "Service " + (success ? "started" : "not start"), Toast.LENGTH_SHORT).show();
+                        },
+                        error -> ViewUtils.getAlertDialog(getContext(), error.getMessage())
+                );
     }
 
     private void checkEnvironment() {
@@ -162,7 +209,6 @@ public class MainActivity extends BaseActivity {
                         }
 
                         mCommander.initEnvironment();
-                        initServerInfo();
 
                         if (!subscriber.isUnsubscribed()) {
                             subscriber.onNext(null);
