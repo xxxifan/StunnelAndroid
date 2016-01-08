@@ -1,7 +1,5 @@
 package com.xxxifan.stunnelandroid.utils;
 
-import android.content.Context;
-import android.os.Build;
 import android.text.TextUtils;
 
 import com.xxxifan.devbox.library.tools.IOUtils;
@@ -15,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
+import okio.Okio;
+
 /**
  * Created by xifan on 16-1-8.
  */
@@ -27,14 +27,18 @@ public class Commander {
     private static final String COMMAND_EXIT = "exit\n";
     private static final String COMMAND_LINE_END = "\n";
 
-    private static final String ASSET_NAME = "stunnel";
+    private static final String ASSET_STUNNEL = "stunnel";
+    private static final String ASSET_CONFIG = "stunnel.conf";
+
+    private static final String CONF_TARGET_PATH = "/data/local/etc/stunnel/stunnel.conf";
+    private static final String CERT_TARGET_PATH = "/data/local/etc/stunnel/stunnel.pem";
 
     public static boolean checkRootPermission() {
-        return execCommand("echo root", true, false).result == 0;
+        return execCommand("echo root", true, true).result == 0;
     }
 
     public static void chmod(int mode, String path) {
-        execCommand("chmod " + mode + " " + path, true, false);
+        execCommand("chmod " + mode + " " + path, true, true);
     }
 
     public static CommandResult execCommand(String command, boolean isRoot, boolean isNeedResultMsg) {
@@ -121,10 +125,30 @@ public class Commander {
                 errorMsg == null ? null : errorMsg.toString());
     }
 
+    public static void extractAssetTo(InputStream inputStream, File target) throws
+            IOException {
+        IOUtils.saveToDisk(inputStream, target);
+    }
+
+    /**
+     * extract file to a temp dir that have write permission, and then move to target with root.
+     */
+    public static void extractAssetTo(InputStream inputStream, File tmpFile, File target) throws
+            IOException {
+        IOUtils.saveToDisk(inputStream, tmpFile);
+
+        execCommand(new String[]{
+                CMD_RW_SYSTEM,
+                "cat " + tmpFile.getPath() + " > " + target.getPath(),
+                "chmod 0755 " + target.getPath(),
+                CMD_RO_SYSTEM
+        }, true, true);
+    }
+
     public void initEnvironment() throws IOException {
         File target = new File("/system/bin/stunnel");
         if (!target.exists() || target.isDirectory()) {
-            InputStream stream = App.get().getAssets().open(ASSET_NAME);
+            InputStream stream = App.get().getAssets().open(ASSET_STUNNEL);
             Commander.extractAssetTo(stream, target);
             chmod(4755, target.getPath());
         }
@@ -169,24 +193,33 @@ public class Commander {
 //        }
     }
 
-    public static void extractAssetTo(InputStream inputStream, File target) throws
-            IOException {
-       IOUtils.saveToDisk(inputStream, target);
-    }
+    public void saveConfig(String server, String serverPort, String localPort, String mCertPath) throws IOException {
+        File certFile = new File(mCertPath);
+        File certTargetFile = new File(CERT_TARGET_PATH);
+        File confTargetFile = new File(CONF_TARGET_PATH);
+        if (confTargetFile.exists()) {
+            confTargetFile.delete();
+        }
 
-    /**
-     * extract file to a temp dir that have write permission, and then move to target with root.
-     */
-    public static void extractAssetTo(InputStream inputStream, File tmpFile, File target) throws
-            IOException {
-        IOUtils.saveToDisk(inputStream, tmpFile);
-
-        execCommand(new String[]{
-                CMD_RW_SYSTEM,
-                "cat " + tmpFile.getPath() + " > " + target.getPath(),
-                "chmod 0755 " + target.getPath(),
-                CMD_RO_SYSTEM
-        }, true, false);
+        boolean confResult = IOUtils.saveToDisk(App.get().getAssets().open(ASSET_CONFIG), confTargetFile);
+        if (confResult) {
+            chmod(4755, confTargetFile.getPath());
+            execCommand(
+                    String.format(
+                            "echo \"accept = 127.0.0.1:%s\\nconnect = %s:%s\\n\" > %s",
+                            localPort,
+                            server,
+                            serverPort,
+                            confTargetFile.getPath()
+                    ),
+                    true,
+                    true
+            );
+        }
+        boolean certResult = IOUtils.saveToDisk(Okio.buffer(Okio.source(certFile)), certTargetFile);
+        if (certResult) {
+            chmod(4755, certTargetFile.getPath());
+        }
     }
 
     /**

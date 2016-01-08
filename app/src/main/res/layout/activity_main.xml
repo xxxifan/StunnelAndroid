@@ -14,6 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/title_server_address"
+            android:inputType="numberDecimal"
             android:singleLine="true" />
     </android.support.design.widget.TextInputLayout>
 
@@ -27,14 +28,42 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/title_server_port"
+            android:inputType="number"
             android:singleLine="true" />
     </android.support.design.widget.TextInputLayout>
 
-    <Button
-        android:id="@+id/cert_btn"
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/item_padding_small">
+
+        <EditText
+            android:id="@+id/local_port_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/title_local_port"
+            android:inputType="number"
+            android:singleLine="true" />
+    </android.support.design.widget.TextInputLayout>
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/title_choose_cert" />
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/cert_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title_choose_cert" />
+
+        <Button
+            android:id="@+id/save_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_save" />
+    </LinearLayout>
+
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -45,21 +74,38 @@
             android:id="@+id/service_status_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/service_start_btn"
+            android:layout_alignBottom="@+id/service_control_layout"
             android:text="@string/title_service_status" />
 
         <TextView
             android:id="@+id/service_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/service_start_btn"
+            android:layout_alignBottom="@+id/service_control_layout"
             android:layout_toEndOf="@id/service_status_title" />
 
-        <ImageView
-            android:id="@+id/service_start_btn"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_alignParentEnd="true" />
+        <FrameLayout
+            android:id="@+id/service_control_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true">
+
+            <ImageView
+                android:id="@+id/service_start_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?selectableItemBackgroundBorderless"
+                android:padding="@dimen/item_padding"
+                android:src="@drawable/ic_play_arrow_white_24dp"
+                android:tint="@color/colorAccent" />
+
+            <ProgressBar
+                android:id="@+id/service_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:visibility="gone" />
+        </FrameLayout>
     </RelativeLayout>
 
     <TextView
