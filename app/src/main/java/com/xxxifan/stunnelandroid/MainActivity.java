@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,6 +47,10 @@ public class MainActivity extends BaseActivity {
     TextView mCertPathText;
     @Bind(R.id.service_progress)
     ProgressBar mProgressBar;
+    @Bind(R.id.service_start_btn)
+    ImageView mStartBtn;
+    @Bind(R.id.save_btn)
+    Button mSaveBtn;
 
     private Commander mCommander;
     private ServerInfo mServerInfo;
@@ -190,6 +195,9 @@ public class MainActivity extends BaseActivity {
     }
 
     private void checkEnvironment() {
+        mStartBtn.setEnabled(true);
+        mSaveBtn.setEnabled(true);
+
         mLoadingDialog = ViewUtils.getLoadingDialog(getContext());
         mLoadingDialog.show();
 
@@ -227,7 +235,9 @@ public class MainActivity extends BaseActivity {
                         o -> ViewUtils.dismissDialog(mLoadingDialog),
                         throwable -> {
                             ViewUtils.dismissDialog(mLoadingDialog);
-                            ViewUtils.getAlertDialog(getContext(), throwable.getMessage());
+                            ViewUtils.getAlertDialog(getContext(), throwable.getMessage()).show();
+                            mStartBtn.setEnabled(false);
+                            mSaveBtn.setEnabled(false);
                         }
                 );
     }
