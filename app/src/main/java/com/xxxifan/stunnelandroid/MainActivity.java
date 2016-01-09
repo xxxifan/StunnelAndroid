@@ -71,6 +71,7 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView(View rootView) {
+        checkEnvironment();
     }
 
     @Override
@@ -82,7 +83,6 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        checkEnvironment();
         initServerInfo();
         checkServer();
     }

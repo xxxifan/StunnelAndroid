@@ -33,6 +33,7 @@ public class Commander {
     private static final String ASSET_CONFIG_NAME = "stunnel.conf";
     private static final String ASSET_CERT_NAME = "stunnel.pem";
 
+    private static final String EXECUTE_PATH = "/data/local/stunnel/";
     private static final String BINARY_TARGET_PATH = "/system/bin/stunnel";
 
     private static LogObserver mLogObserver;
@@ -186,9 +187,8 @@ public class Commander {
         serverInfo.loadInfo();
         if (serverInfo.hasConfig() && serverInfo.start) {
             log("Starting stunnel service", 0);
-            String rootPath = "/data/local/etc/stunnel/" + ASSET_CONFIG_NAME;
+            String rootPath = EXECUTE_PATH + ASSET_CONFIG_NAME;
             try {
-//                CommandResult result = execCommand("stunnel " + rootPath + "/" + ASSET_CONFIG_NAME, false, true);
                 CommandResult result = execCommand("stunnel " + rootPath, false, true);
                 App.get().startService(new Intent(App.get(), CoreService.class));
                 boolean success = TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
@@ -237,17 +237,19 @@ public class Commander {
         if (!busyBoxBin.exists()) {
             extractAssetTo(App.get().getAssets().open("busybox"), busyBoxBin, true);
         }
+        execCommand("mkdir -p " + EXECUTE_PATH, true, true);
+        execCommand("chmod -R 777 " + EXECUTE_PATH, true, true);
     }
 
     public void saveConfig(ServerInfo info, String mCertPath) throws Exception {
         log("Saving config", 0);
         info.save();
-        File root = App.get().getFilesDir();
         File certFile = new File(mCertPath);
-        File certTargetFile = new File("/data/local/etc/stunnel/" + ASSET_CERT_NAME);
-        String rootPath = root.getPath();
+        File certTargetFile = new File(EXECUTE_PATH + ASSET_CERT_NAME);
 
-        String confFilePath = "/data/local/etc/stunnel/" + ASSET_CONFIG_NAME;
+        String rootPath = App.get().getFilesDir().getPath();
+
+        String confFilePath = EXECUTE_PATH + ASSET_CONFIG_NAME;
         // write config
         execCommand(new String[] {
                         "echo \"client = yes\" > " + confFilePath,

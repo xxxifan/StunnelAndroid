@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="@dimen/item_padding_large">
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:padding="@dimen/item_padding_large">
 
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
+        android:focusableInTouchMode="true"
+        android:focusable="true"
         android:layout_height="wrap_content">
 
         <EditText
@@ -15,7 +17,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/title_server_address"
             android:inputType="phone"
-            android:singleLine="true" />
+            android:singleLine="true"/>
     </android.support.design.widget.TextInputLayout>
 
     <android.support.design.widget.TextInputLayout
@@ -29,7 +31,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/title_server_port"
             android:inputType="number"
-            android:singleLine="true" />
+            android:singleLine="true"/>
     </android.support.design.widget.TextInputLayout>
 
     <android.support.design.widget.TextInputLayout
@@ -43,7 +45,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/title_local_port"
             android:inputType="number"
-            android:singleLine="true" />
+            android:singleLine="true"/>
     </android.support.design.widget.TextInputLayout>
 
     <LinearLayout
@@ -56,20 +58,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:gravity="center_vertical" />
+            android:gravity="center_vertical"/>
 
         <Button
             android:id="@+id/cert_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/title_choose_cert" />
+            android:text="@string/title_choose_cert"/>
     </LinearLayout>
 
     <Button
         android:id="@+id/save_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/btn_save" />
+        android:text="@string/btn_save"/>
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -81,14 +83,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignBottom="@+id/service_control_layout"
-            android:text="@string/title_service_status" />
+            android:text="@string/title_service_status"/>
 
         <TextView
             android:id="@+id/service_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignBottom="@+id/service_control_layout"
-            android:layout_toEndOf="@id/service_status_title" />
+            android:layout_toEndOf="@id/service_status_title"/>
 
         <FrameLayout
             android:id="@+id/service_control_layout"
@@ -103,14 +105,14 @@
                 android:background="?selectableItemBackgroundBorderless"
                 android:padding="@dimen/item_padding"
                 android:src="@drawable/ic_play_arrow_white_24dp"
-                android:tint="@color/colorAccent" />
+                android:tint="@color/colorAccent"/>
 
             <ProgressBar
                 android:id="@+id/service_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:indeterminate="true"
-                android:visibility="gone" />
+                android:visibility="gone"/>
         </FrameLayout>
     </RelativeLayout>
 
@@ -118,10 +120,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/item_padding"
-        android:text="@string/title_log" />
+        android:text="@string/title_log"/>
 
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"/>
 </LinearLayout>
