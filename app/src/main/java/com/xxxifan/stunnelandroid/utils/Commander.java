@@ -186,10 +186,10 @@ public class Commander {
         serverInfo.loadInfo();
         if (serverInfo.hasConfig() && serverInfo.start) {
             log("Starting stunnel service", 0);
-            String rootPath = "/data/data/com.xxxifan.stunnelandroid/files/stunnel.conf";
+            String rootPath = "/data/local/etc/stunnel/" + ASSET_CONFIG_NAME;
             try {
 //                CommandResult result = execCommand("stunnel " + rootPath + "/" + ASSET_CONFIG_NAME, false, true);
-                CommandResult result = execCommand("stunnel " + rootPath + "/" + ASSET_CONFIG_NAME, false, true);
+                CommandResult result = execCommand("stunnel " + rootPath, false, true);
                 App.get().startService(new Intent(App.get(), CoreService.class));
                 boolean success = TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
                 if (success) {
@@ -244,10 +244,10 @@ public class Commander {
         info.save();
         File root = App.get().getFilesDir();
         File certFile = new File(mCertPath);
-        File certTargetFile = new File(root, ASSET_CERT_NAME);
+        File certTargetFile = new File("/data/local/etc/stunnel/" + ASSET_CERT_NAME);
         String rootPath = root.getPath();
 
-        String confFilePath = rootPath + File.separator + ASSET_CONFIG_NAME;
+        String confFilePath = "/data/local/etc/stunnel/" + ASSET_CONFIG_NAME;
         // write config
         execCommand(new String[] {
                         "echo \"client = yes\" > " + confFilePath,
@@ -267,7 +267,7 @@ public class Commander {
                                 info.serverPort,
                                 confFilePath
                         ),
-                        "echo \"cert = " + rootPath + "/stunnel.pem\" >> " + confFilePath,
+                        "echo \"cert = " + certTargetFile + "\" >> " + confFilePath,
                 },
                 true,
                 true
