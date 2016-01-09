@@ -12,7 +12,6 @@ import com.xxxifan.stunnelandroid.service.CoreService;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -30,33 +29,29 @@ public class Commander {
     private static final String COMMAND_EXIT = "exit\n";
     private static final String COMMAND_LINE_END = "\n";
 
-    private static final String ASSET_STUNNEL = "stunnel";
-    private static final String ASSET_CONFIG = "stunnel.conf";
+    private static final String ASSET_STUNNEL_NAME = "stunnel";
+    private static final String ASSET_CONFIG_NAME = "stunnel.conf";
+    private static final String ASSET_CERT_NAME = "stunnel.pem";
 
-    private static final String CONF_TARGET_PATH = "/data/local/etc/stunnel/stunnel.conf";
-    private static final String CERT_TARGET_PATH = "/data/local/etc/stunnel/stunnel.pem";
     private static final String BINARY_TARGET_PATH = "/system/bin/stunnel";
-    private static final String ROOT_PATH = "/data/local/etc/stunnel";
-    private static final String LOG_PATH = "/data/local/var/log";
 
     private static LogObserver mLogObserver;
 
-    public static boolean checkRootPermission() {
-        return execCommand("echo root", true, true).result == 0;
+    public static boolean checkRootPermission() throws Exception {
+        return execCommand("echo \"check root\"", true, true).result == 0;
     }
 
-    public static void chmod(int mode, String path) {
+    public static void chmod(int mode, String path) throws Exception {
         execCommand("chmod " + mode + " " + path, true, true);
     }
 
-    public static CommandResult execCommand(String command, boolean isRoot, boolean isNeedResultMsg) {
-        return execCommand(new String[] {
-                command
-        }, isRoot, isNeedResultMsg);
+    public static CommandResult execCommand(String command, boolean isRoot,
+                                            boolean isNeedResultMsg) throws Exception {
+        return execCommand(new String[] {command}, isRoot, isNeedResultMsg);
     }
 
     public static CommandResult execCommand(String[] commands, boolean isRoot,
-                                            boolean isNeedResultMsg) {
+                                            boolean isNeedResultMsg) throws Exception {
         int result = -1;
         if (commands == null || commands.length == 0) {
             return new CommandResult(result, null, null);
@@ -102,21 +97,15 @@ public class Commander {
                     errorMsg.append(s);
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         } finally {
-            try {
-                if (os != null) {
-                    os.close();
-                }
-                if (successResult != null) {
-                    successResult.close();
-                }
-                if (errorResult != null) {
-                    errorResult.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (os != null) {
+                os.close();
+            }
+            if (successResult != null) {
+                successResult.close();
+            }
+            if (errorResult != null) {
+                errorResult.close();
             }
 
             if (process != null) {
@@ -124,9 +113,9 @@ public class Commander {
             }
         }
 
-        if (successMsg != null) {
+        if (!TextUtils.isEmpty(successMsg)) {
             Log.e(Commander.class, "successMsg : " + successMsg.toString());
-        } else if (errorMsg != null) {
+        } else if (!TextUtils.isEmpty(errorMsg)) {
             Log.e(Commander.class, "errorMsg : " + errorMsg.toString());
         }
 
@@ -135,7 +124,7 @@ public class Commander {
     }
 
     public static void extractAssetTo(InputStream inputStream, File target) throws
-            IOException {
+            Exception {
         extractAssetTo(inputStream, target, false);
     }
 
@@ -143,7 +132,7 @@ public class Commander {
      * extract file to a temp dir that have write permission, and then move to target with root.
      */
     public static void extractAssetTo(InputStream inputStream, File target, boolean writeSystem) throws
-            IOException {
+            Exception {
         if (writeSystem) {
             File tmpFile = new File(App.get().getFilesDir(), "extract");
 
@@ -152,7 +141,7 @@ public class Commander {
             execCommand(new String[] {
                     CMD_RW_SYSTEM,
                     "cat " + tmpFile.getPath() + " > " + target.getPath(),
-                    "chmod 0755 " + target.getPath(),
+                    "chmod 777 " + target.getPath(),
                     CMD_RO_SYSTEM
             }, true, true);
         } else {
@@ -175,16 +164,21 @@ public class Commander {
     }
 
     public static boolean isStunnelStarted() {
-        CommandResult result = execCommand("ps stunnel", true, true);
-        if (!TextUtils.isEmpty(result.successMsg)) {
-            String[] strs = result.successMsg.split(" ");
-            for (String str : strs) {
-                if (str.trim().equals("stunnel")) {
-                    return true;
+        try {
+            CommandResult result = execCommand("ps stunnel", true, true);
+            if (!TextUtils.isEmpty(result.successMsg)) {
+                String[] strs = result.successMsg.split(" ");
+                for (String str : strs) {
+                    if (str.trim().equals("stunnel")) {
+                        return true;
+                    }
                 }
             }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     public static boolean startStunnelService() {
@@ -192,111 +186,99 @@ public class Commander {
         serverInfo.loadInfo();
         if (serverInfo.hasConfig() && serverInfo.start) {
             log("Starting stunnel service", 0);
-            CommandResult result = execCommand("stunnel", true, true);
-            App.get().startService(new Intent(App.get(), CoreService.class));
-            boolean success = TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
-            if (success) {
-                log("Start success", 1);
-            } else {
-                log("Start failed, maybe server is already running", -1);
+            String rootPath = "/data/data/com.xxxifan.stunnelandroid/files/stunnel.conf";
+            try {
+//                CommandResult result = execCommand("stunnel " + rootPath + "/" + ASSET_CONFIG_NAME, false, true);
+                CommandResult result = execCommand("stunnel " + rootPath + "/" + ASSET_CONFIG_NAME, false, true);
+                App.get().startService(new Intent(App.get(), CoreService.class));
+                boolean success = TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
+                if (success) {
+                    log("Start success", 1);
+                    return true;
+                } else {
+                    log("Start failed, checking possible reasons", -1);
+                    boolean started = isStunnelStarted();
+                    if (started) {
+                        log("Stunnel already started :P", 1);
+                        return true;
+                    } else {
+                        log(!TextUtils.isEmpty(result.successMsg) ? result.successMsg :
+                                !TextUtils.isEmpty(result.errorMsg) ? result.errorMsg : "Unknown error", -1);
+                        return false;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
             }
-
-            return success;
         }
         return false;
     }
 
     public static void killStunnelService() {
-        execCommand("busybox pkill stunnel", true, true);
-        App.get().stopService(new Intent(App.get(), CoreService.class));
-        log("Stunnel service stopped", 1);
+        try {
+            execCommand("busybox pkill stunnel", true, true);
+            App.get().stopService(new Intent(App.get(), CoreService.class));
+            log("Stunnel service stopped", 1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
-    public void initEnvironment() throws IOException {
+    public void initEnvironment() throws Exception {
         log("checking environment", 0);
         File binaryFile = new File(BINARY_TARGET_PATH);
         if (!binaryFile.exists() || binaryFile.isDirectory()) {
-            extractAssetTo(App.get().getAssets().open(ASSET_STUNNEL), binaryFile, true);
-            chmod(4755, binaryFile.getPath());
+            extractAssetTo(App.get().getAssets().open(ASSET_STUNNEL_NAME), binaryFile, true);
+            chmod(777, binaryFile.getPath());
         }
         File busyBoxBin = new File("/system/xbin/busybox");
         if (!busyBoxBin.exists()) {
             extractAssetTo(App.get().getAssets().open("busybox"), busyBoxBin, true);
         }
-        execCommand(new String[] {
-                "mkdir -p " + ROOT_PATH,
-                "chmod -R 0644 " + ROOT_PATH
-        }, true, true);
-        execCommand(new String[] {
-                "mkdir -p " + LOG_PATH,
-                "chmod -R 0644 " + LOG_PATH
-        }, true, true);
-
-//        Context context = App.get();
-//        File busyBoxBin = new File("/system/xbin/busybox");
-//        File applet = new File("/system/xbin/find");
-//        File fixBin = new File(context.getFilesDir(), "fix_permission");
-//
-//        if (!busyBoxBin.exists()) {
-//            try {
-//                File tmp = new File(context.getFilesDir(), "busybox");
-//                extractAssetTo(context.getAssets().open("binary/busybox"), tmp, busyBoxBin);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//            execCommand(new String[]{
-//                    CMD_RW_SYSTEM,
-//                    "/system/xbin/busybox --install -s " + "/system/xbin",
-//                    CMD_RO_SYSTEM
-//            }, true, false);
-//        }
-//
-//        if (!applet.exists()) {
-//            execCommand(new String[]{
-//                    CMD_RW_SYSTEM,
-//                    "/system/xbin/busybox --install -s " + "/system/xbin",
-//                    CMD_RO_SYSTEM
-//            }, true, false);
-//        }
-//
-//        if (!fixBin.exists()) {
-//            try {
-//                extractAssetTo(context.getAssets().open("binary/fix_permission"), fixBin);
-//                execCommand(new String[]{
-//                        "chmod 0755 " + fixBin.getPath(),
-//                }, true, false);
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
-    public void saveConfig(ServerInfo info, String mCertPath) throws IOException {
+    public void saveConfig(ServerInfo info, String mCertPath) throws Exception {
         log("Saving config", 0);
         info.save();
-
+        File root = App.get().getFilesDir();
         File certFile = new File(mCertPath);
-        File certTargetFile = new File(CERT_TARGET_PATH);
-        File confTargetFile = new File(CONF_TARGET_PATH);
-        if (confTargetFile.exists()) {
-            confTargetFile.delete();
-        }
-        // extract config
-        extractAssetTo(App.get().getAssets().open(ASSET_CONFIG), confTargetFile, true);
+        File certTargetFile = new File(root, ASSET_CERT_NAME);
+        String rootPath = root.getPath();
+
+        String confFilePath = rootPath + File.separator + ASSET_CONFIG_NAME;
         // write config
-        execCommand(
-                String.format(
-                        "echo \"accept = 127.0.0.1:%s\\nconnect = %s:%s\\n\" >> %s",
-                        info.localPort,
-                        info.server,
-                        info.serverPort,
-                        confTargetFile.getPath()
-                ),
+        execCommand(new String[] {
+                        "echo \"client = yes\" > " + confFilePath,
+                        "echo \"socket = r:TCP_NODELAY=1\" >> " + confFilePath,
+                        "echo \"pid = " + rootPath + "/stunnel.pid\" >> " + confFilePath,
+                        "echo \"debug = info\" >> " + confFilePath,
+                        "echo \"output = " + rootPath + "/stunnel.log\" >> " + confFilePath,
+                        "echo \"[StunnelAndroid]\" >> " + confFilePath,
+                        String.format(
+                                "echo \"accept = 127.0.0.1:%s\" >> %s",
+                                info.localPort,
+                                confFilePath
+                        ),
+                        String.format(
+                                "echo \"connect = %s:%s\" >> %s",
+                                info.server,
+                                info.serverPort,
+                                confFilePath
+                        ),
+                        "echo \"cert = " + rootPath + "/stunnel.pem\" >> " + confFilePath,
+                },
                 true,
                 true
         );
+        chmod(777, confFilePath);
         // extra cert
         extractAssetTo(Okio.buffer(Okio.source(certFile)).inputStream(), certTargetFile, true);
+        // try to create log file
+        execCommand("touch " + rootPath + "/stunnel.log", false, true);
+        chmod(777, rootPath + "/stunnel.log");
+        log("Config saved", 1);
     }
 
     /**

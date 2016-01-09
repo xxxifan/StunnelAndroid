@@ -9,4 +9,6 @@
     <string name="btn_save">Save</string>
     <string name="title_local_port">Local port</string>
     <string name="running">Stunnel service is running</string>
+    <string name="menu_view_stunnel_log">Stunnel Log</string>
+    <string name="menu_clear_config">Clear config</string>
 </resources>

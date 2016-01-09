@@ -36,7 +36,7 @@ public class LogObserver {
         if (mLogText != null) {
             mLogText.post(() -> {
                 mLogText.setText(mLog);
-                mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+                mScrollView.smoothScrollTo(0, mScrollView.getHeight());
             });
         }
     }

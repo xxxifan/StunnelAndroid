@@ -3,6 +3,7 @@ package com.xxxifan.stunnelandroid;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,7 +22,6 @@ import com.xxxifan.stunnelandroid.model.ServerInfo;
 import com.xxxifan.stunnelandroid.utils.Commander;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import butterknife.Bind;
@@ -71,6 +71,12 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView(View rootView) {
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -135,26 +141,32 @@ public class MainActivity extends BaseActivity {
             mServerInfo.serverPort = mPortText.getText().toString();
             mServerInfo.localPort = mLocalPortText.getText().toString();
 
-            Observable.just(true)
-                    .map(whatever -> {
-                        if (mCommander == null) {
-                            mCommander = new Commander();
-                        }
+            Observable
+                    .create(subscriber -> {
                         try {
+                            if (mCommander == null) {
+                                mCommander = new Commander();
+                            }
                             mCommander.saveConfig(mServerInfo, mCertPath);
-                        } catch (IOException e) {
+                            if (!subscriber.isUnsubscribed()) {
+                                subscriber.onNext(null);
+                                subscriber.onCompleted();
+                            }
+                        } catch (Exception e) {
                             e.printStackTrace();
-                            return false;
+                            if (!subscriber.isUnsubscribed()) {
+                                subscriber.onError(e);
+                            }
                         }
-                        return true;
                     })
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .doOnError(throwable -> Commander.log("Save failed", -1))
                     .subscribe(
                             success -> ViewUtils.dismissDialog(mLoadingDialog),
-                            error -> ViewUtils.getAlertDialog(getContext(), error.getMessage())
-                    );
+                            error -> {
+                                ViewUtils.dismissDialog(mLoadingDialog);
+                                Commander.log("Save failed", -1);
+                            });
         } else {
             fields[empty].requestFocus();
             Toast.makeText(getContext(), "Please input server info", Toast.LENGTH_LONG).show();
