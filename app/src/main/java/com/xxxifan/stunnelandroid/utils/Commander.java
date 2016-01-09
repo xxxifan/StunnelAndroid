@@ -1,11 +1,13 @@
 package com.xxxifan.stunnelandroid.utils;
 
+import android.content.Intent;
 import android.text.TextUtils;
 
 import com.xxxifan.devbox.library.tools.IOUtils;
 import com.xxxifan.devbox.library.tools.Log;
 import com.xxxifan.stunnelandroid.App;
 import com.xxxifan.stunnelandroid.model.ServerInfo;
+import com.xxxifan.stunnelandroid.service.CoreService;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -31,13 +33,13 @@ public class Commander {
     private static final String ASSET_STUNNEL = "stunnel";
     private static final String ASSET_CONFIG = "stunnel.conf";
 
-    private static final String TEMP_EXTRACT_PATH = "/data/local/tmp/";
-
     private static final String CONF_TARGET_PATH = "/data/local/etc/stunnel/stunnel.conf";
     private static final String CERT_TARGET_PATH = "/data/local/etc/stunnel/stunnel.pem";
     private static final String BINARY_TARGET_PATH = "/system/bin/stunnel";
-    private static final String ROOT_PATH = "/data/local/etc/stunnel/";
-    private static final String LOG_PATH = "/data/local/var/log/";
+    private static final String ROOT_PATH = "/data/local/etc/stunnel";
+    private static final String LOG_PATH = "/data/local/var/log";
+
+    private static LogObserver mLogObserver;
 
     public static boolean checkRootPermission() {
         return execCommand("echo root", true, true).result == 0;
@@ -75,6 +77,7 @@ public class Commander {
                     continue;
                 }
 
+                Log.e(Commander.class, "Running : " + command);
                 // donnot use os.writeBytes(commmand), avoid chinese charset
                 // error
                 os.write(command.getBytes());
@@ -157,6 +160,14 @@ public class Commander {
         }
     }
 
+    public static void registerLogObserver(LogObserver observer) {
+        mLogObserver = observer;
+    }
+
+    public static void unregisterLogObserver() {
+        mLogObserver = null;
+    }
+
     public static boolean isStunnelStarted() {
         CommandResult result = execCommand("ps stunnel", true, true);
         if (!TextUtils.isEmpty(result.successMsg)) {
@@ -174,22 +185,46 @@ public class Commander {
         ServerInfo serverInfo = new ServerInfo();
         serverInfo.loadInfo();
         if (serverInfo.hasConfig() && serverInfo.start) {
+            log("Starting stunnel service", 0);
             CommandResult result = execCommand("stunnel", true, true);
-            return TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
+            App.get().startService(new Intent(App.get(), CoreService.class));
+            boolean success = TextUtils.isEmpty(result.successMsg) && TextUtils.isEmpty(result.errorMsg);
+            if (success) {
+                log("Start success", 1);
+            } else {
+                log("Start failed", -1);
+            }
+
+            return success;
         }
         return false;
     }
 
+    public static void log(String log, int type) {
+        if (mLogObserver != null) {
+            mLogObserver.log(log, type);
+        }
+    }
+
     public static void killStunnelService() {
-        execCommand("pkill stunnel", true, true);
+        log("Stunnel is Running", 1);
+        execCommand("busybox pkill stunnel", true, true);
+        App.get().stopService(new Intent(App.get(), CoreService.class));
     }
 
     public void initEnvironment() throws IOException {
+        log("checking environment", 0);
         File binaryFile = new File(BINARY_TARGET_PATH);
         if (!binaryFile.exists() || binaryFile.isDirectory()) {
-            InputStream stream = App.get().getAssets().open(ASSET_STUNNEL);
-            extractAssetTo(stream, binaryFile, true);
+            extractAssetTo(App.get().getAssets().open(ASSET_STUNNEL), binaryFile, true);
             chmod(4755, binaryFile.getPath());
+        }
+        if (!new File(ROOT_PATH).exists()) {
+            log("see", -1);
+        }
+        File busyBoxBin = new File("/system/xbin/busybox");
+        if (!busyBoxBin.exists()) {
+            extractAssetTo(App.get().getAssets().open("busybox"), busyBoxBin, true);
         }
         execCommand(new String[] {
                 "mkdir -p " + ROOT_PATH,

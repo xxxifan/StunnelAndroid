@@ -22,7 +22,6 @@ import com.xxxifan.stunnelandroid.utils.Commander;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import butterknife.Bind;
@@ -88,8 +87,8 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void onCreateFragment(List<Fragment> savedFragments) {
-        if (savedFragments != null) {
-            setContainerFragment(new ShowLogFragment());
+        if (savedFragments == null) {
+            setContainerFragment(new LogFragment());
         }
     }
 
@@ -97,12 +96,8 @@ public class MainActivity extends BaseActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1 && resultCode == -1) {
-            try {
-                mCertPath = FileUtils.getPath(getContext(), data.getData());
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            }
-            if (TextUtils.isEmpty(mCertPath)) {
+            mCertPath = FileUtils.getPath(getContext(), data.getData());
+            if (TextUtils.isEmpty(mCertPath) || !mCertPath.endsWith(".pem")) {
                 Toast.makeText(getContext(), "Invalid cert file", Toast.LENGTH_LONG).show();
             } else {
                 mCertPathText.setText(new File(mCertPath).getName());
@@ -113,7 +108,7 @@ public class MainActivity extends BaseActivity {
     @OnClick(R.id.cert_btn)
     public void onChooseCert(View view) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("text/pem");
+        intent.setType("*/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         startActivityForResult(intent, 1);
     }
@@ -166,14 +161,20 @@ public class MainActivity extends BaseActivity {
 
     @OnClick(R.id.service_start_btn)
     public void onStartClick(View view) {
+        if (!mServerInfo.hasConfig()) {
+            Toast.makeText(getContext(), "Please input config first!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         mProgressBar.setVisibility(View.VISIBLE);
         checkServer();
         if (!mIsStarted) {
             startStunnel();
         } else {
             Toast.makeText(getContext(), "Service " + "stopped", Toast.LENGTH_SHORT).show();
-            Commander.killStunnelService();
+            mServerInfo.setServiceState(false);
             mProgressBar.setVisibility(View.GONE);
+            Commander.killStunnelService();
         }
     }
 

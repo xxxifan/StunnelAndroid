@@ -28,7 +28,6 @@ import com.xxxifan.devbox.library.tools.ViewUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.ButterKnife;
 import de.greenrobot.event.EventBus;
 
 /**
@@ -63,7 +62,6 @@ public abstract class BaseFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mInflater = inflater;
         View view = inflater.inflate(mLayoutId, container, false);
-        ButterKnife.bind(this, view);
         initView(view);
         return view;
     }
@@ -132,8 +130,6 @@ public abstract class BaseFragment extends Fragment {
             mUiControllers.clear();
             mUiControllers = null;
         }
-
-        ButterKnife.unbind(this);
     }
 
     /**

@@ -8,4 +8,5 @@
     <string name="title_log">Log</string>
     <string name="btn_save">Save</string>
     <string name="title_local_port">Local port</string>
+    <string name="running">Stunnel service is running</string>
 </resources>
