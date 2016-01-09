@@ -7,6 +7,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import com.xxxifan.stunnelandroid.R;
+import com.xxxifan.stunnelandroid.utils.Commander;
 
 /**
  * Created by xifan on 16-1-9.
@@ -24,12 +25,14 @@ public class CoreService extends Service {
                 .setContentText(getString(R.string.running))
                 .build();
         startForeground(R.string.app_name, notification);
+        Commander.log("Guard service is started", 1);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         stopForeground(true);
+        Commander.log("Guard service is stopped", 1);
     }
 
     @Nullable

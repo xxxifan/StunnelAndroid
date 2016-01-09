@@ -168,6 +168,12 @@ public class Commander {
         mLogObserver = null;
     }
 
+    public static void log(String log, int type) {
+        if (mLogObserver != null) {
+            mLogObserver.log(log, type);
+        }
+    }
+
     public static boolean isStunnelStarted() {
         CommandResult result = execCommand("ps stunnel", true, true);
         if (!TextUtils.isEmpty(result.successMsg)) {
@@ -192,7 +198,7 @@ public class Commander {
             if (success) {
                 log("Start success", 1);
             } else {
-                log("Start failed", -1);
+                log("Start failed, maybe server is already running", -1);
             }
 
             return success;
@@ -200,16 +206,10 @@ public class Commander {
         return false;
     }
 
-    public static void log(String log, int type) {
-        if (mLogObserver != null) {
-            mLogObserver.log(log, type);
-        }
-    }
-
     public static void killStunnelService() {
-        log("Stunnel is Running", 1);
         execCommand("busybox pkill stunnel", true, true);
         App.get().stopService(new Intent(App.get(), CoreService.class));
+        log("Stunnel service stopped", 1);
     }
 
     public void initEnvironment() throws IOException {
@@ -218,9 +218,6 @@ public class Commander {
         if (!binaryFile.exists() || binaryFile.isDirectory()) {
             extractAssetTo(App.get().getAssets().open(ASSET_STUNNEL), binaryFile, true);
             chmod(4755, binaryFile.getPath());
-        }
-        if (!new File(ROOT_PATH).exists()) {
-            log("see", -1);
         }
         File busyBoxBin = new File("/system/xbin/busybox");
         if (!busyBoxBin.exists()) {
@@ -275,14 +272,15 @@ public class Commander {
     }
 
     public void saveConfig(ServerInfo info, String mCertPath) throws IOException {
+        log("Saving config", 0);
         info.save();
+
         File certFile = new File(mCertPath);
         File certTargetFile = new File(CERT_TARGET_PATH);
         File confTargetFile = new File(CONF_TARGET_PATH);
         if (confTargetFile.exists()) {
             confTargetFile.delete();
         }
-
         // extract config
         extractAssetTo(App.get().getAssets().open(ASSET_CONFIG), confTargetFile, true);
         // write config

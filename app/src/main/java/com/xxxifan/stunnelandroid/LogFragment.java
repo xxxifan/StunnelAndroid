@@ -26,6 +26,7 @@ public class LogFragment extends BaseFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        Commander.unregisterLogObserver();
         if (mLogObserver != null) {
             mLogObserver.onDestroy();
         }

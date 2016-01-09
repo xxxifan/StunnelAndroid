@@ -1,6 +1,7 @@
 package com.xxxifan.stunnelandroid.utils;
 
 import android.view.View;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.xxxifan.stunnelandroid.R;
@@ -15,6 +16,8 @@ public class LogObserver {
 
     @Bind(R.id.log_text)
     TextView mLogText;
+    @Bind(R.id.log_scroller)
+    ScrollView mScrollView;
 
     private String mLog;
 
@@ -30,7 +33,12 @@ public class LogObserver {
     }
 
     private void showLog() {
-        mLogText.post(() -> mLogText.setText(mLog));
+        if (mLogText != null) {
+            mLogText.post(() -> {
+                mLogText.setText(mLog);
+                mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+            });
+        }
     }
 
     public void clear() {

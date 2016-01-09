@@ -83,6 +83,7 @@ public class MainActivity extends BaseActivity {
 
     private void checkServer() {
         mIsStarted = Commander.isStunnelStarted();
+        Commander.log("Stunnel service is " + (mIsStarted ? "running" : "stopped"), 0);
     }
 
     @Override
@@ -149,6 +150,7 @@ public class MainActivity extends BaseActivity {
                     })
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
+                    .doOnError(throwable -> Commander.log("Save failed", -1))
                     .subscribe(
                             success -> ViewUtils.dismissDialog(mLoadingDialog),
                             error -> ViewUtils.getAlertDialog(getContext(), error.getMessage())
