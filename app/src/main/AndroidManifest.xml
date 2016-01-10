@@ -23,6 +23,7 @@
                 <action android:name="android.intent.action.USER_PRESENT"/>
             </intent-filter>
         </receiver>
+        <service android:name=".service.CoreService"/>
         <activity
             android:name=".MainActivity">
             <intent-filter>
